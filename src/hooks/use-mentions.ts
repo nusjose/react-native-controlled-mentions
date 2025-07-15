@@ -88,38 +88,61 @@ const useMentions = <TriggerName extends string>({
       null,
       mentionState.parts.map(({ text, config, data }, index) => {
         console.log({ text, config, data });
-      
+
         let displayText = text;
         let style = defaultTriggerTextStyle;
-      
+
         if (!config || !data) {
-          const regex = /@\[([^\]]+)\]\(id:[^)]+(?: color:([^)]+))?\)/;
-          const match = regex.exec(text);
-        
-          if (match) {
+          const regex = /@\[([^\]]+)\]\(id:[^)]+(?: color:([^)]+))?\)/g;
+          let lastIndex = 0;
+          const elements: React.ReactNode[] = [];
+
+          let match: RegExpExecArray | null;
+          while ((match = regex.exec(text)) !== null) {
+            const beforeText = text.slice(lastIndex, match.index);
+            if (beforeText) {
+              elements.push(
+                React.createElement(Text, { key: `${index}-before-${lastIndex}` }, beforeText),
+              );
+            }
+
             const name = match[1];
             const color = match[2] ?? '#000000';
-        
-            displayText = `@${name}`;
-            style = {
-              color: color,
-              fontWeight: 'bold',
-            };
-          } else {
-            return React.createElement(Text, { key: index }, text);
+
+            elements.push(
+              React.createElement(
+                Text,
+                {
+                  key: `${index}-mention-${lastIndex}`,
+                  style: { color, fontWeight: 'bold' },
+                },
+                `@${name}`,
+              ),
+            );
+
+            lastIndex = match.index + match[0].length;
           }
-        } else {
-          style =
-            typeof config?.textStyle === 'function'
-              ? config?.textStyle(data)
-              : {
-                  ...(typeof config?.textStyle === 'object' && config?.textStyle !== null
-                    ? config?.textStyle
-                    : {}),
-                  ...(data && 'color' in data ? { color: (data as any).color } : {}),
-                };
+
+          const afterText = text.slice(lastIndex);
+          if (afterText) {
+            elements.push(
+              React.createElement(Text, { key: `${index}-after-${lastIndex}` }, afterText),
+            );
+          }
+
+          return React.createElement(React.Fragment, { key: index }, elements);
         }
-      
+
+        style =
+          typeof config.textStyle === 'function'
+            ? config.textStyle(data)
+            : {
+                ...(typeof config.textStyle === 'object' && config.textStyle !== null
+                  ? config.textStyle
+                  : {}),
+                ...(data && 'color' in data ? { color: (data as any).color } : {}),
+              };
+
         return React.createElement(
           Text,
           {
@@ -128,7 +151,7 @@ const useMentions = <TriggerName extends string>({
           },
           displayText,
         );
-      })
+      }),
     ),
   };
 
