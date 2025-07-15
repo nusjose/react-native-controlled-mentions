@@ -91,6 +91,10 @@ const useMentions = <TriggerName extends string>({
           return React.createElement(Text, { key: index }, text);
         }
 
+        if (!data) {
+          return React.createElement(Text, { key: index }, text);
+        }
+
         const style =
           typeof config.textStyle === 'function'
             ? config.textStyle(data)
@@ -98,9 +102,7 @@ const useMentions = <TriggerName extends string>({
                 ...((config.textStyle && typeof config.textStyle === 'object')
                   ? config.textStyle
                   : {}),
-        ...(data && typeof data === 'object' && 'color' in data
-          ? { color: (data as any).color }
-          : {}),
+        ...(data.color ? { color: data.color } : {}),
       };
 
         return React.createElement(
