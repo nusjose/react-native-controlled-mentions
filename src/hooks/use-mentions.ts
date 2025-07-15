@@ -8,7 +8,6 @@ import {
   parseValue,
 } from '@mention-utils';
 import React, { useMemo, useState } from 'react';
-import { NativeSyntheticEvent, Text, TextInputSelectionChangeEventData } from 'react-native';
 
 /**
  * Hook that stores mention context.
@@ -27,80 +26,75 @@ const useMentions = <TriggerName extends string>({
     end: 0,
   });
 
-  const mentionState = useMemo(() => {
-    return parseValue(value, getConfigsArray(triggersConfig, patternsConfig));
-  }, [value, triggersConfig, patternsConfig]);
+  /**
+   * State that includes current parts and plain text
+   */
+  const mentionState = useMemo(
+    () => parseValue(value, getConfigsArray(triggersConfig, patternsConfig)),
+    [value, triggersConfig, patternsConfig],
+  );
 
+  /**
+   * Callback that handles TextInput text change
+   */
   const handleTextChange = (text: string) => {
-    const nextValue = generateValueFromMentionStateAndChangedText(mentionState, text);
-    onChange(nextValue);
+    onChange(generateValueFromMentionStateAndChangedText(mentionState, text));
   };
 
-  const handleSelectionChange = (
-    event: NativeSyntheticEvent<TextInputSelectionChangeEventData>,
-  ) => {
+  /**
+   * Callback that handles TextInput selection change
+   */
+  const handleSelectionChange = (event: any) => {
     const newSelection = event.nativeEvent.selection;
+
     setSelection(newSelection);
-    onSelectionChange?.(newSelection);
+    onSelectionChange && onSelectionChange(newSelection);
   };
 
-  const triggers = useMemo(() => {
-    return getTriggerPartSuggestionKeywords<TriggerName>(
-      mentionState,
-      selection,
-      triggersConfig,
-      onChange,
-    );
-  }, [mentionState, selection, triggersConfig, onChange]);
-
+  /**
+   * `TextInput` props that we can provide to the `TextInput` component.
+   */
   const textInputProps = {
     onChangeText: handleTextChange,
     onSelectionChange: handleSelectionChange,
     children: React.createElement(
-      Text,
+      'text',
       null,
       mentionState.parts.map(({ text, config, data }, index) => {
-        console.log('=> part', { text, config, data });
-
         let displayText = text;
         let style = defaultTriggerTextStyle;
 
         if (!config || !data) {
-          // Fallback parse mention for text like @[Name](id:xxx color:yyy)
-          const regex = /@\[([^\]]+)\]\(id:[^)]+(?: color:(#[A-Fa-f0-9]{6}))?\)/;
+          // Check if text matches @[name](id:xxx color:#xxxxxx)
+          const regex = /@\[(.+?)\]\(id:[^)]+(?: color:(#[0-9a-fA-F]{6}))?\)/;
           const match = regex.exec(text);
 
           if (match) {
             const name = match[1];
             const color = match[2] ?? '#000000';
+
             displayText = `@${name}`;
             style = {
               color: color,
               fontWeight: 'bold',
             };
-            console.log('=> fallback style', style);
-          } else {
-            // Plain text
-            return React.createElement(Text, { key: index }, text);
           }
         } else {
-          // Mention with full data
           style =
-            typeof config?.textStyle === 'function'
+            typeof config.textStyle === 'function'
               ? config.textStyle(data)
               : {
-                  ...(typeof config?.textStyle === 'object' ? config.textStyle : {}),
-                  ...(data && 'color' in data ? { color: (data as any).color } : {}),
+                  ...(typeof config.textStyle === 'object' && config.textStyle !== null
+                    ? config.textStyle
+                    : {}),
+                  ...(data && 'color' in data ? { color: (data as any)?.color } : {}),
                 };
-          displayText = `@${(data as any)?.name || displayText}`;
-          console.log('=> config style', style);
         }
 
-        console.log('=> final style', style);
         return React.createElement(
-          Text,
+          'text',
           {
-            key: `${index}-${data?.trigger ?? 'plain'}`,
+            key: `${index}-${data?.trigger ?? 'pattern'}`,
             style,
           },
           displayText,
@@ -110,7 +104,12 @@ const useMentions = <TriggerName extends string>({
   };
 
   return {
-    triggers,
+    triggers: getTriggerPartSuggestionKeywords<TriggerName>(
+      mentionState,
+      selection,
+      triggersConfig,
+      onChange,
+    ),
     textInputProps,
     mentionState,
   };
