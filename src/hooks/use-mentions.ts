@@ -87,13 +87,14 @@ const useMentions = <TriggerName extends string>({
       Text,
       null,
       mentionState.parts.map(({ text, config, data }, index) => {
-        if (!config) {
-          return React.createElement(Text, { key: index }, text);
-        }
+        console.log({ text, config, data });
+        // if (!config) {
+        //   return React.createElement(Text, { key: index }, text);
+        // }
 
-        if (!data) {
-          return React.createElement(Text, { key: index }, text);
-        }
+        // if (!data) {
+        //   return React.createElement(Text, { key: index }, text);
+        // }
 
         const style =
           typeof config.textStyle === 'function'
