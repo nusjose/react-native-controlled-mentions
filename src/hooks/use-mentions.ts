@@ -95,12 +95,12 @@ const useMentions = <TriggerName extends string>({
         if (!config || !data) {
           const regex = /@\[([^\]]+)\]\(id:[^)]+(?: color:([^)]+))?\)/;
           const match = regex.exec(text);
-      
+        
           if (match) {
             const name = match[1];
             const color = match[2] ?? '#000000';
-      
-            displayText = name;
+        
+            displayText = `@${name}`;
             style = {
               color: color,
               fontWeight: 'bold',
@@ -110,13 +110,13 @@ const useMentions = <TriggerName extends string>({
           }
         } else {
           style =
-            typeof config.textStyle === 'function'
-              ? config.textStyle(data)
+            typeof config?.textStyle === 'function'
+              ? config?.textStyle(data)
               : {
-                  ...(typeof config.textStyle === 'object' && config.textStyle !== null
-                    ? config.textStyle
+                  ...(typeof config?.textStyle === 'object' && config?.textStyle !== null
+                    ? config?.textStyle
                     : {}),
-                  ...(data && 'color' in data ? { color: (data as any)?.color } : {}),
+                  ...(data && 'color' in data ? { color: (data as any).color } : {}),
                 };
         }
       
