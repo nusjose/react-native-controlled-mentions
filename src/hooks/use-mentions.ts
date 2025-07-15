@@ -35,10 +35,9 @@ const useMentions = <TriggerName extends string>({
   /**
    * State that includes current parts and plain text
    */
-  const mentionState = useMemo(
-    () => parseValue(value, getConfigsArray(triggersConfig, patternsConfig)),
-    [value, triggersConfig, patternsConfig],
-  );
+  const mentionState = useMemo(() => {
+    return parseValue(value, getConfigsArray(triggersConfig, patternsConfig));
+  }, [value, triggersConfig, patternsConfig]);
 
   /**
    * Callback that handles TextInput text change
@@ -46,7 +45,9 @@ const useMentions = <TriggerName extends string>({
    * @param text
    */
   const handleTextChange = (text: string) => {
-    onChange(generateValueFromMentionStateAndChangedText(mentionState, text));
+    // Merge new text with current mentionState to preserve mentions
+    const nextValue = generateValueFromMentionStateAndChangedText(mentionState, text);
+    onChange(nextValue);
   };
 
   /**
@@ -58,7 +59,6 @@ const useMentions = <TriggerName extends string>({
     event: NativeSyntheticEvent<TextInputSelectionChangeEventData>,
   ) => {
     const newSelection = event.nativeEvent.selection;
-
     setSelection(newSelection);
     onSelectionChange && onSelectionChange(newSelection);
   };
@@ -66,16 +66,14 @@ const useMentions = <TriggerName extends string>({
   /**
    * Object with triggers and their current keyword state depending on current text and selection
    */
-  const triggers = useMemo(
-    () =>
-      getTriggerPartSuggestionKeywords<TriggerName>(
-        mentionState,
-        selection,
-        triggersConfig,
-        onChange,
-      ),
-    [mentionState, selection, triggersConfig, onChange],
-  );
+  const triggers = useMemo(() => {
+    return getTriggerPartSuggestionKeywords<TriggerName>(
+      mentionState,
+      selection,
+      triggersConfig,
+      onChange,
+    );
+  }, [mentionState, selection, triggersConfig, onChange]);
 
   /**
    * `TextInput` props that we can provide to the `TextInput` component.
@@ -93,56 +91,37 @@ const useMentions = <TriggerName extends string>({
         let style = defaultTriggerTextStyle;
 
         if (!config || !data) {
-          const regex = /@\[([^\]]+)\]\(id:[^)]+(?: color:([^)]+))?\)/g;
-          let lastIndex = 0;
-          const elements: React.ReactNode[] = [];
+          // Fallback parse for unrecognized mentions (e.g. when adding new text)
+          const regex = /@\[([^\]]+)\]\(id:[^)]+(?: color:([^)]+))?\)/;
+          const match = regex.exec(text);
 
-          let match: RegExpExecArray | null;
-          while ((match = regex.exec(text)) !== null) {
-            const beforeText = text.slice(lastIndex, match.index);
-            if (beforeText) {
-              elements.push(
-                React.createElement(Text, { key: `${index}-before-${lastIndex}` }, beforeText),
-              );
-            }
-
+          if (match) {
             const name = match[1];
             const color = match[2] ?? '#000000';
-
-            elements.push(
-              React.createElement(
-                Text,
-                {
-                  key: `${index}-mention-${lastIndex}`,
-                  style: { color, fontWeight: 'bold' },
-                },
-                `@${name}`,
-              ),
-            );
-
-            lastIndex = match.index + match[0].length;
+            displayText = `@${name}`;
+            style = {
+              color,
+              fontWeight: 'bold',
+            };
+            console.log("=>> style ", style);
+          } else {
+            // Plain text
+            return React.createElement(Text, { key: index }, text);
           }
-
-          const afterText = text.slice(lastIndex);
-          if (afterText) {
-            elements.push(
-              React.createElement(Text, { key: `${index}-after-${lastIndex}` }, afterText),
-            );
-          }
-
-          return React.createElement(React.Fragment, { key: index }, elements);
+        } else {
+          // Mention with config & data
+          style =
+            typeof config?.textStyle === 'function'
+              ? config?.textStyle(data)
+              : {
+                  ...(typeof config?.textStyle === 'object' && config?.textStyle !== null
+                    ? config?.textStyle
+                    : {}),
+                  ...(data && 'color' in data ? { color: (data as any)?.color } : {}),
+                };
         }
-
-        style =
-          typeof config.textStyle === 'function'
-            ? config.textStyle(data)
-            : {
-                ...(typeof config.textStyle === 'object' && config.textStyle !== null
-                  ? config.textStyle
-                  : {}),
-                ...(data && 'color' in data ? { color: (data as any).color } : {}),
-              };
-
+        console.log("=> final style ", style);
+        
         return React.createElement(
           Text,
           {
@@ -158,7 +137,6 @@ const useMentions = <TriggerName extends string>({
   return {
     triggers,
     textInputProps,
-
     mentionState,
   };
 };
