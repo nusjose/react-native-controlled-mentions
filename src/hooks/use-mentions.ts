@@ -12,11 +12,6 @@ import { NativeSyntheticEvent, Text, TextInputSelectionChangeEventData } from 'r
 
 /**
  * Hook that stores mention context.
- *
- * @param value
- * @param onChange
- * @param triggersConfig
- * @param patterns
  */
 const useMentions = <TriggerName extends string>({
   value,
@@ -32,40 +27,23 @@ const useMentions = <TriggerName extends string>({
     end: 0,
   });
 
-  /**
-   * State that includes current parts and plain text
-   */
   const mentionState = useMemo(() => {
     return parseValue(value, getConfigsArray(triggersConfig, patternsConfig));
   }, [value, triggersConfig, patternsConfig]);
 
-  /**
-   * Callback that handles TextInput text change
-   *
-   * @param text
-   */
   const handleTextChange = (text: string) => {
-    // Merge new text with current mentionState to preserve mentions
     const nextValue = generateValueFromMentionStateAndChangedText(mentionState, text);
     onChange(nextValue);
   };
 
-  /**
-   * Callback that handles TextInput selection change
-   *
-   * @param event
-   */
   const handleSelectionChange = (
     event: NativeSyntheticEvent<TextInputSelectionChangeEventData>,
   ) => {
     const newSelection = event.nativeEvent.selection;
     setSelection(newSelection);
-    onSelectionChange && onSelectionChange(newSelection);
+    onSelectionChange?.(newSelection);
   };
 
-  /**
-   * Object with triggers and their current keyword state depending on current text and selection
-   */
   const triggers = useMemo(() => {
     return getTriggerPartSuggestionKeywords<TriggerName>(
       mentionState,
@@ -75,9 +53,6 @@ const useMentions = <TriggerName extends string>({
     );
   }, [mentionState, selection, triggersConfig, onChange]);
 
-  /**
-   * `TextInput` props that we can provide to the `TextInput` component.
-   */
   const textInputProps = {
     onChangeText: handleTextChange,
     onSelectionChange: handleSelectionChange,
@@ -85,14 +60,14 @@ const useMentions = <TriggerName extends string>({
       Text,
       null,
       mentionState.parts.map(({ text, config, data }, index) => {
-        console.log({ text, config, data });
+        console.log('=> part', { text, config, data });
 
         let displayText = text;
         let style = defaultTriggerTextStyle;
 
         if (!config || !data) {
-          // Fallback parse for unrecognized mentions (e.g. when adding new text)
-          const regex = /@\[([^\]]+)\]\(id:[^)]+(?: color:([^)]+))?\)/;
+          // Fallback parse mention for text like @[Name](id:xxx color:yyy)
+          const regex = /@\[([^\]]+)\]\(id:[^)]+(?: color:(#[A-Fa-f0-9]{6}))?\)/;
           const match = regex.exec(text);
 
           if (match) {
@@ -100,32 +75,32 @@ const useMentions = <TriggerName extends string>({
             const color = match[2] ?? '#000000';
             displayText = `@${name}`;
             style = {
-              color,
+              color: color,
               fontWeight: 'bold',
             };
-            console.log("=>> style ", style);
+            console.log('=> fallback style', style);
           } else {
             // Plain text
             return React.createElement(Text, { key: index }, text);
           }
         } else {
-          // Mention with config & data
+          // Mention with full data
           style =
             typeof config?.textStyle === 'function'
-              ? config?.textStyle(data)
+              ? config.textStyle(data)
               : {
-                  ...(typeof config?.textStyle === 'object' && config?.textStyle !== null
-                    ? config?.textStyle
-                    : {}),
-                  ...(data && 'color' in data ? { color: (data as any)?.color } : {}),
+                  ...(typeof config?.textStyle === 'object' ? config.textStyle : {}),
+                  ...(data && 'color' in data ? { color: (data as any).color } : {}),
                 };
+          displayText = `@${(data as any)?.name || displayText}`;
+          console.log('=> config style', style);
         }
-        console.log("=> final style ", style);
-        
+
+        console.log('=> final style', style);
         return React.createElement(
           Text,
           {
-            key: `${index}-${data?.trigger ?? 'pattern'}`,
+            key: `${index}-${data?.trigger ?? 'plain'}`,
             style,
           },
           displayText,
