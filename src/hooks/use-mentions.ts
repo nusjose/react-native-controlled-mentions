@@ -8,6 +8,7 @@ import {
   parseValue,
 } from '@mention-utils';
 import React, { useMemo, useState } from 'react';
+import { Text } from 'react-native';
 
 /**
  * Hook that stores mention context.
@@ -58,7 +59,7 @@ const useMentions = <TriggerName extends string>({
     onChangeText: handleTextChange,
     onSelectionChange: handleSelectionChange,
     children: React.createElement(
-      'text',
+      Text,
       null,
       mentionState.parts.map(({ text, config, data }, index) => {
         let displayText = text;
@@ -92,7 +93,7 @@ const useMentions = <TriggerName extends string>({
         }
 
         return React.createElement(
-          'text',
+          Text,
           {
             key: `${index}-${data?.trigger ?? 'pattern'}`,
             style,
