@@ -88,9 +88,16 @@ const useMentions = <TriggerName extends string>({
       null,
       mentionState.parts.map(({ text, config, data }, index) => {
         if (!config) {
-          return React.createElement(Text, { key: index }, text)
+          return React.createElement(Text, { key: index }, text);
         }
-        const style = typeof config.textStyle === 'function' ? config.textStyle(data) : config.textStyle
+      
+        const style = typeof config.textStyle === 'function'
+          ? config.textStyle(data)
+          : {
+              ...config.textStyle,
+              ...(data?.color ? { color: data.color } : {}),
+            };
+      
         return React.createElement(
           Text,
           {
@@ -98,8 +105,8 @@ const useMentions = <TriggerName extends string>({
             style: style ?? defaultTriggerTextStyle,
           },
           text,
-        )
-      }),
+        );
+      })
     ),
   };
 
