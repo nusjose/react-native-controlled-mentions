@@ -102,8 +102,11 @@ const useMentions = <TriggerName extends string>({
                 ...((config.textStyle && typeof config.textStyle === 'object')
                   ? config.textStyle
                   : {}),
-        ...(data.color ? { color: data.color } : {}),
-      };
+                ...(data && 'color' in data
+                  ? { color: (data as any).color }
+                  : {}),
+              };
+
 
         return React.createElement(
           Text,
