@@ -97,14 +97,14 @@ const useMentions = <TriggerName extends string>({
         // }
 
         const style =
-          typeof config.textStyle === 'function'
-            ? config.textStyle(data)
+          typeof config?.textStyle === 'function'
+            ? config?.textStyle(data)
             : {
-                ...((config.textStyle && typeof config.textStyle === 'object')
-                  ? config.textStyle
+                ...((config?.textStyle && typeof config?.textStyle === 'object')
+                  ? config?.textStyle
                   : {}),
                 ...(data && 'color' in data
-                  ? { color: (data as any).color }
+                  ? { color: (data as any)?.color }
                   : {}),
               };
 
