@@ -77,7 +77,7 @@ type DefaultTriggerConfig = TriggerConfigBase;
 type CustomTriggerConfig = TriggerConfigBase & {
   pattern: RegExp;
 
-  getTriggerData: (regexMatch: string) => TriggerData | null;
+  getTriggerData: (regexMatch: string | string[], original?: string) => TriggerData | null;
 
   getTriggerValue: (suggestion: Suggestion) => string;
 };
