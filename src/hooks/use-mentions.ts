@@ -88,36 +88,45 @@ const useMentions = <TriggerName extends string>({
       null,
       mentionState.parts.map(({ text, config, data }, index) => {
         console.log({ text, config, data });
-        // if (!config) {
-        //   return React.createElement(Text, { key: index }, text);
-        // }
-
-        // if (!data) {
-        //   return React.createElement(Text, { key: index }, text);
-        // }
-
-        const style =
-          typeof config?.textStyle === 'function'
-            ? config?.textStyle(data)
-            : {
-                ...((config?.textStyle && typeof config?.textStyle === 'object')
-                  ? config?.textStyle
-                  : {}),
-                ...(data && 'color' in data
-                  ? { color: (data as any)?.color }
-                  : {}),
-              };
-
-
+      
+        let displayText = text;
+        let style = defaultTriggerTextStyle;
+      
+        if (!config || !data) {
+          const regex = /@\[([^\]]+)\]\(id:[^)]+(?: color:([^)]+))?\)/;
+          const match = regex.exec(text);
+      
+          if (match) {
+            const name = match[1];
+            const color = match[2] ?? '#000000';
+      
+            displayText = name;
+            style = {
+              color: color,
+              fontWeight: 'bold',
+            };
+          } else {
+            return React.createElement(Text, { key: index }, text);
+          }
+        } else {
+          style =
+            typeof config.textStyle === 'function'
+              ? config.textStyle(data)
+              : {
+                  ...(config.textStyle ?? {}),
+                  ...(data && 'color' in data ? { color: (data as any)?.color } : {}),
+                };
+        }
+      
         return React.createElement(
           Text,
           {
             key: `${index}-${data?.trigger ?? 'pattern'}`,
-            style: style ?? defaultTriggerTextStyle,
+            style,
           },
-          text,
+          displayText,
         );
-      }),
+      })
     ),
   };
 
